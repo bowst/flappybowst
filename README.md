@@ -1,4 +1,4 @@
-flappybowst
+Flappy Bōwst
 ===========
 
 A Swift based FlappyBird for iOS 8. Inspired by and based on the FullStackIO version 
