@@ -22,7 +22,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let levelCat:UInt32     = 1 << 2
     let scoreCat:UInt32     = 1 << 3
     let skyColor            = SKColor(red: 0, green: 191, blue: 255, alpha: 1)
-    let pipeGap             = 150
+    let pipeGap:CGFloat     = 150.0
     let message             = "Click to start!"
 
     
@@ -59,16 +59,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
     
     // override init
-    init() {
+    override init() {
         super.init()
     }
 
-    init(size: CGSize) {
+    required override init(size: CGSize) {
         super.init(size: size)
     }
     
-    init(coder aDecoder: NSCoder!) {
-        super.init(coder: aDecoder)
+    required init(coder aDecoder: NSCoder?) {
+        super.init(coder: aDecoder!)
     }
     
     
@@ -94,21 +94,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         self.setupPipes()
         
-        self.addChild(self.pipesNode)
+        
         
         
         // Setup the actions...
         self.makeGameEnd = SKAction.runBlock({
             self.isGameOver = true;
-            })
+        })
         
         self.makeSkyBlue = SKAction.runBlock({
             self.backgroundColor = self.skyColor;
-            })
+        })
         
         self.makeSkyRed = SKAction.runBlock({
             self.backgroundColor = UIColor.redColor()
-            })
+        })
         
         
         // setup the score
@@ -125,17 +125,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     override func touchesBegan(touches: NSSet, withEvent event: UIEvent) {
         /* Called when a touch begins */
         
-        if !self.isStarted && self.scene.view.paused {
+        if !self.isStarted && self.scene!.view!.paused {
             self.isStarted = true
-            self.scene.view.paused = false
+            self.scene!.view!.paused = false
             
             self.startLabel.removeFromParent()
         }
         
         if self.scrollNode.speed > 0  {
             for touch: AnyObject in touches {
-                self.hero.physicsBody.velocity = CGVectorMake(0, 0)
-                self.hero.physicsBody.applyImpulse(CGVectorMake(0, 40))
+                self.hero.physicsBody?.velocity = CGVectorMake(0, 0)
+                self.hero.physicsBody?.applyImpulse(CGVectorMake(0, 40))
                 
             }
         }
@@ -177,29 +177,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         s.scaleMode = .AspectFill
         
-        self.view.presentScene(s)
+        self.view?.presentScene(s)
     }
     
-    
-    func clamp(min: CGFloat, max: CGFloat, value: CGFloat) -> CGFloat {
-        if( value > max ) {
-            return max
-        } else if( value < min ) {
-            return min
-        } else {
-            return value
-        }
-    }
 
     
     override func update(currentTime: CFTimeInterval) {
         /* Called before each frame is rendered */
-        self.hero.zRotation = self.clamp(-1, max: 0.5, value: self.hero.physicsBody.velocity.dy * (self.hero.physicsBody.velocity.dy < 0 ? 0.003 : 0.001 ) )
+        if let ourHero = self.hero {
+            self.hero.zRotation = Utilities.clamp(-1, max: 0.5,
+                value: ourHero.physicsBody!.velocity.dy * (ourHero.physicsBody?.velocity.dy < 0 ? 0.003 : 0.001 )
+)
+            
+            // * (ourHero.physicsBody?.velocity.dy < 0 ? 0.003 : 0.001 )
+        }
         
         if self.isGameOver {
             restart()
         }
-        
     }
     
     
@@ -227,11 +222,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         // Using rect since the logo is an, um...rectangle.
         hero.physicsBody                    = SKPhysicsBody(rectangleOfSize: hero.size)
-        hero.physicsBody.dynamic            = true
-        hero.physicsBody.allowsRotation     = false
-        hero.physicsBody.categoryBitMask    = heroCat
-        hero.physicsBody.collisionBitMask   = levelCat | pipeCat
-        hero.physicsBody.contactTestBitMask = levelCat | pipeCat
+        hero.physicsBody?.dynamic            = true
+        hero.physicsBody?.allowsRotation     = false
+        hero.physicsBody?.categoryBitMask    = heroCat
+        hero.physicsBody?.collisionBitMask   = levelCat | pipeCat
+        hero.physicsBody?.contactTestBitMask = levelCat | pipeCat
         
         self.addChild(hero)
         return hero
@@ -240,14 +235,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func setupGround() {
 
-        let groundTex           = SKTexture(imageNamed: "land")
-        let groundTexSize       = groundTex.size()
-        let groundTexWidth      = groundTexSize.width
-        let groundTexHeight     = groundTexSize.height
-        
-        let moveGroundSprite        = SKAction.moveByX(-groundTexWidth * 2.0, y: 0, duration: NSTimeInterval(0.02 * groundTexWidth * 2.0))
-        let resetGroundSprite       = SKAction.moveByX(groundTexWidth * 2.0, y: 0, duration: 0.0)
-        let moveGroundSpritesForever = SKAction.repeatActionForever(SKAction.sequence([moveGroundSprite,resetGroundSprite]))
+        let groundTex                   = SKTexture(imageNamed: "land")
+        let groundTexSize               = groundTex.size()
+        let groundTexWidth              = groundTexSize.width
+        let groundTexHeight             = groundTexSize.height
+        let moveGroundSprite            = SKAction.moveByX(-groundTexWidth * 2.0, y: 0, duration: NSTimeInterval(0.02 * groundTexWidth * 2.0))
+        let resetGroundSprite           = SKAction.moveByX(groundTexWidth * 2.0, y: 0, duration: 0.0)
+        let moveGroundSpritesForever    = SKAction.repeatActionForever(SKAction.sequence([moveGroundSprite,resetGroundSprite]))
         
 
         groundTex.filteringMode = .Nearest
@@ -261,10 +255,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         
         
-        self.groundNode.position = CGPointMake(0, groundTexHeight)
-        self.groundNode.physicsBody = SKPhysicsBody(rectangleOfSize: CGSizeMake(self.frame.size.width, groundTexHeight * 2.0))
-        self.groundNode.physicsBody.dynamic = false
-        self.groundNode.physicsBody.categoryBitMask = levelCat
+        self.groundNode.position                    = CGPointMake(0, groundTexHeight)
+        self.groundNode.physicsBody                 = SKPhysicsBody(rectangleOfSize: CGSizeMake(self.frame.size.width, groundTexHeight * 2.0))
+        self.groundNode.physicsBody?.dynamic         = false
+        self.groundNode.physicsBody?.categoryBitMask = levelCat
         
         self.addChild(groundNode)
         self.addChild(scrollNode)
@@ -305,30 +299,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         var y               = CGFloat(Double(arc4random())) % height + height
 
         
-        var pipeDown                            = SKSpriteNode(texture: self.pipeDownTex)
+        let pipeDown                            = SKSpriteNode(texture: self.pipeDownTex)
         pipeDown.setScale(2.0)
         pipeDown.position                       = CGPointMake(0.0, y + pipeDown.size.height + pipeGap)
         pipeDown.physicsBody                    = SKPhysicsBody(rectangleOfSize: pipeDown.size)
-        pipeDown.physicsBody.dynamic            = false
-        pipeDown.physicsBody.categoryBitMask    = pipeCat
-        pipeDown.physicsBody.contactTestBitMask = heroCat
+        pipeDown.physicsBody?.dynamic            = false
+        pipeDown.physicsBody?.categoryBitMask    = pipeCat
+        pipeDown.physicsBody?.contactTestBitMask = heroCat
         pipePair.addChild(pipeDown)
         
         let pipeUp                              = SKSpriteNode(texture: self.pipeUpTex)
         pipeUp.setScale(2.0)
         pipeUp.position                         = CGPointMake(0.0, y)
         pipeUp.physicsBody                      = SKPhysicsBody(rectangleOfSize: pipeUp.size)
-        pipeUp.physicsBody.dynamic              = false
-        pipeUp.physicsBody.categoryBitMask      = pipeCat
-        pipeUp.physicsBody.contactTestBitMask   = heroCat
+        pipeUp.physicsBody?.dynamic              = false
+        pipeUp.physicsBody?.categoryBitMask      = pipeCat
+        pipeUp.physicsBody?.contactTestBitMask   = heroCat
         pipePair.addChild(pipeUp)
         
-        var contactNode                             = SKNode()
+        let contactNode                             = SKNode()
         contactNode.position                        = CGPointMake( pipeDown.size.width + hero.size.width / 2, CGRectGetMidY( self.frame ) )
         contactNode.physicsBody                     = SKPhysicsBody(rectangleOfSize: CGSizeMake( pipeUp.size.width, self.frame.size.height ))
-        contactNode.physicsBody.dynamic             = false
-        contactNode.physicsBody.categoryBitMask     = scoreCat
-        contactNode.physicsBody.contactTestBitMask  = heroCat
+        contactNode.physicsBody?.dynamic             = false
+        contactNode.physicsBody?.categoryBitMask     = scoreCat
+        contactNode.physicsBody?.contactTestBitMask  = heroCat
 
         pipePair.addChild(contactNode)
         pipePair.runAction(movePipesAndRemove)
@@ -355,6 +349,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         self.runAction(spawnThenDelayForever)
         
+        self.addChild(self.pipesNode)
         
     }
     
